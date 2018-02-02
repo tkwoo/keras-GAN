@@ -122,7 +122,8 @@ def train(BATCH_SIZE):
                     str(epoch)+"_"+str(index)+".png")
             X = np.concatenate((image_batch, generated_images))
             y = [1] * BATCH_SIZE + [0] * BATCH_SIZE
-            if epoch >= 2 and  index%2 == 0:
+            # d_loss = d.train_on_batch(X, y)
+            if epoch >= 2 and index%2 == 0:
                 d_loss = d.train_on_batch(X, y)
             elif epoch < 2:
                 d_loss = d.train_on_batch(X, y)
