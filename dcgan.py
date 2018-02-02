@@ -28,57 +28,37 @@ config.gpu_options.allow_growth = True
 set_session(tf.Session(config=config))
 
 def generator_model():
-    # model = Sequential()
     inputs = Input((100,))
     fc1 = Dense(input_dim=100, units=128*7*7)(inputs)
     fc1 = BatchNormalization()(fc1)
-    # fc1 = Activation('relu')(fc1)
     fc1 = LeakyReLU(0.2)(fc1)
-    # fc2 = Dense(128*7*7)(fc1)
-    # fc2 = BatchNormalization()(fc2)
-    # fc2 = Activation('relu')(fc2)
     fc2 = Reshape((7, 7, 128), input_shape=(128*7*7,))(fc1)
-    
     up1 = Conv2DTranspose(64, (2, 2), strides=(2, 2), padding='same')(fc2)
-    
-    # up1 = BatchNormalization()(up1)
-    # up1 = Activation('relu')(up1)
     conv1 = Conv2D(64, (3, 3), padding='same')(up1)
     conv1 = BatchNormalization()(conv1)
     conv1 = Activation('relu')(conv1)
     up2 = Conv2DTranspose(64, (2, 2), strides=(2, 2), padding='same')(conv1)
-    # up2 = BatchNormalization()(up2)
-    # up2 = Activation('relu')(up2)
     conv2 = Conv2D(1, (5, 5), padding='same')(up2)
-    output = Activation('tanh')(conv2)
+    outputs = Activation('tanh')(conv2)
     
-    model = Model(inputs=[inputs], outputs=[output])
-    # model.summary()
-    # exit()
+    model = Model(inputs=[inputs], outputs=[outputs])
     return model
 
 
 def discriminator_model():
     model = Sequential()
-    model.add(Conv2D(64, (5, 5), padding='same', input_shape=(28, 28, 1)))
-    # model.add(Activation('tanh'))
-    model.add(LeakyReLU(0.2))
-    model.add(MaxPooling2D(pool_size=(2, 2)))
-    model.add(Conv2D(128, (5, 5), padding='same'))
-    # model.add(BatchNormalization())
-    model.add(LeakyReLU(0.2))
-    # model.add(Activation('tanh'))
-    model.add(MaxPooling2D(pool_size=(2, 2)))
-
-    model.add(Flatten())
-    # model.add(Dense(1024))
-    # model.add(BatchNormalization())
-    # model.add(LeakyReLU(0.2))
-    # model.add(Activation('tanh'))
-    model.add(Dense(1))
-    model.add(Activation('sigmoid'))
-    # model.summary()
-    # exit()
+    inputs = Input((28, 28, 1))
+    conv1 = Conv2D(64, (5, 5), padding='same')(inputs)
+    conv1 = LeakyReLU(0.2)(conv1)
+    pool1 = MaxPooling2D(pool_size=(2, 2))(conv1)
+    conv2 = Conv2D(128, (5, 5), padding='same')(pool1)
+    conv2 = LeakyReLU(0.2)(conv2)
+    pool2 = MaxPooling2D(pool_size=(2, 2))(conv2)
+    fc1 = Flatten()(pool2)
+    fc1 = Dense(1)(fc1)
+    outputs = Activation('sigmoid')(fc1)
+    
+    model = Model(inputs=[inputs], outputs=[outputs])
     return model
 
 
