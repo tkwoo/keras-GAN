@@ -173,6 +173,11 @@ def generate(BATCH_SIZE, nice=False):
         "generated_image.png")
 
 
+# def Anomaly_score(x, d, d_on_g, Lambda=0.1):
+    
+
+    
+
 def get_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--mode", type=str, default='train')
