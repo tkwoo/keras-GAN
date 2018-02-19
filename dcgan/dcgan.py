@@ -120,6 +120,7 @@ def train(BATCH_SIZE):
                 image = image*127.5+127.5
                 Image.fromarray(image.astype(np.uint8)).save('./result/'+
                     str(epoch)+"_"+str(index)+".png")
+                    
             X = np.concatenate((image_batch, generated_images))
             y = [1] * BATCH_SIZE + [0] * BATCH_SIZE
             # d_loss = d.train_on_batch(X, y)
