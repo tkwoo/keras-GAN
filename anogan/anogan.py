@@ -165,7 +165,7 @@ def feature_extractor():
     d = discriminator_model()
     d.load_weights('assets/discriminator.h5') 
     intermidiate_model = Model(inputs=d.layers[0].input, outputs=d.layers[-7].output)
-    intermidiate_model.compile(loss='binary_crossentropy', optimizer='sgd')
+    intermidiate_model.compile(loss='binary_crossentropy', optimizer='adam')
     return intermidiate_model
 
 def anomaly_detector():
@@ -180,15 +180,28 @@ def anomaly_detector():
     G_out = g(gInput)
     D_out= intermidiate_model(G_out)    
     model = Model(inputs=aInput, outputs=[G_out, D_out])
-    model.compile(loss=sum_of_residual, loss_weights= [0.9, 0.1], optimizer='sgd')
+    model.compile(loss=sum_of_residual, loss_weights= [1, 0], optimizer='rmsprop')
     model.summary()
     # exit()
     return model
 
-def compute_anomaly_score(model, x):    
-    z = np.random.uniform(0, 1, size=(1, 100))
-    intermidiate_model = feature_extractor()
-    d_x = intermidiate_model.predict(x)
-    loss = model.fit(z, [x, d_x], epochs=100, verbose=1)
-    similar_data, _ = model.predict(z)
+def compute_anomaly_score(model, x):
+    num_z = 10
+    z = np.random.uniform(0, 1, size=(num_z, 1, 100))
+
+    list_similar_data = []
+    list_loss = []
+    for idx in range(1):
+        intermidiate_model = feature_extractor()
+        d_x = intermidiate_model.predict(x)
+        loss = model.fit(z[idx], [x, d_x], epochs=1, verbose=1)
+        similar_data, _ = model.predict(z[idx])
+        print (similar_data.shape)
+        print (np.sum(abs(x[0] - similar_data[0])))
+        list_similar_data.append(similar_data)
+        list_loss.append(loss.history['loss'][-1])
+    
+    # print (list_loss)
+    # exit()
+    
     return loss.history['loss'][-1], similar_data

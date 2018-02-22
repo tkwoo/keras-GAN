@@ -35,45 +35,44 @@ print (X_train.shape)
 # Model_d, Model_g = anogan.train(64, X_train)
 Model_d, Model_g = anogan.load_model()
 
-generated_img = anogan.generate(64)
-img = anogan.combine_images(generated_img)
-img = (img+1)/2
-# cv2.namedWindow('generated', 0)
-# cv2.resizeWindow('generated', 256, 256)
+# generated_img = anogan.generate(64)
+# img = anogan.combine_images(generated_img)
+# img = (img+1)/2
+# # cv2.namedWindow('generated', 0)
+# # cv2.resizeWindow('generated', 256, 256)
 
-plt.figure(figsize=(4, 4))
-plt.imshow(img, cmap=plt.cm.gray)
-plt.show()
+# plt.figure(figsize=(4, 4))
+# plt.imshow(img, cmap=plt.cm.gray)
+# plt.show()
 
 # exit()
 
 ## compute anomaly score - sample from test set
 # X_test = X_test.astype(np.float32) - 127.5 / 127.
 # X_test = X_test.reshape(-1, 28, 28, 1)
-test_img = X_test[-10]
+# test_img = X_test[-10]
 
-model = anogan.anomaly_detector()
-ano_score, similar_img = anogan.compute_anomaly_score(model, test_img.reshape(1, 28, 28, 1))
+# model = anogan.anomaly_detector()
+# ano_score, similar_img = anogan.compute_anomaly_score(model, test_img.reshape(1, 28, 28, 1))
 
-test_img = (test_img+1)/2
-similar_img = (similar_img+1)/2
+# test_img = (test_img+1)/2
+# similar_img = (similar_img+1)/2
 
-plt.figure(figsize=(2, 2))
-plt.imshow(test_img.reshape(28,28), cmap=plt.cm.gray)
-plt.show()
-print("anomaly score : " + str(ano_score))
-plt.figure(figsize=(2, 2))
-plt.imshow(test_img.reshape(28,28), cmap=plt.cm.gray)
-residual  = test_img.reshape(28,28) - similar_img.reshape(28, 28)
-plt.imshow(residual, cmap='jet', alpha=.5)
-plt.show()
-
+# plt.figure(figsize=(2, 2))
+# plt.imshow(test_img.reshape(28,28), cmap=plt.cm.gray)
+# plt.show()
+# print("anomaly score : " + str(ano_score))
+# plt.figure(figsize=(2, 2))
+# plt.imshow(test_img.reshape(28,28), cmap=plt.cm.gray)
+# residual  = test_img.reshape(28,28) - similar_img.reshape(28, 28)
+# plt.imshow(residual, cmap='jet', alpha=.5)
+# plt.show()
 
 ## compute anomaly score - sample from strange image
 
 # test_img = plt.imread('assets/test_img.png')
 # test_img = test_img[:,:,0]
-test_img = X_test_original[y_test==0][50]
+test_img = X_test_original[y_test==0][30]
 
 model = anogan.anomaly_detector()
 ano_score, similar_img = anogan.compute_anomaly_score(model, test_img.reshape(1, 28, 28, 1))
