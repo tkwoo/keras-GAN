@@ -159,7 +159,7 @@ def generate(BATCH_SIZE):
     return generated_images
 
 def sum_of_residual(y_true, y_pred):
-    return tf.reduce_sum(abs(y_true - y_pred))
+    return K.sum(K.abs(y_true - y_pred))
 
 def feature_extractor():
     d = discriminator_model()
@@ -194,12 +194,18 @@ def compute_anomaly_score(model, x):
     for idx in range(1):
         intermidiate_model = feature_extractor()
         d_x = intermidiate_model.predict(x)
-        loss = model.fit(z[idx], [x, d_x], epochs=1, verbose=1)
         similar_data, _ = model.predict(z[idx])
+        print (similar_data.shape)
+        print (np.sum(abs(x[0] - similar_data[0])))
+
+        loss = model.fit(z[idx], [x, d_x], epochs=100, verbose=0)
+        similar_data, _ = model.predict(z[idx])
+        print (model.evaluate(z[idx], [x, d_x], 1, 1))
         print (similar_data.shape)
         print (np.sum(abs(x[0] - similar_data[0])))
         list_similar_data.append(similar_data)
         list_loss.append(loss.history['loss'][-1])
+        print (loss.history['loss'])
     
     # print (list_loss)
     # exit()
