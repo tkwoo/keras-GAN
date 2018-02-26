@@ -23,8 +23,8 @@ X_train = X_train[:,:,:,None]
 X_test = X_test[:,:,:,None]
 X_test_original = X_test.copy()
 
-X_train = X_train[(y_train==0) | (y_train==1)]
-X_test = X_test[(y_test==0) | (y_test==1)]
+X_train = X_train[(y_train==1)] # | (y_train==0)]
+X_test = X_test[(y_test==1)] # | (y_test==0)]
 
 print (X_train.shape)
 print (X_test.shape)
@@ -33,24 +33,25 @@ X_train = np.append(X_train, X_test, axis=0)
 print (X_train.shape)
 
 # Model_d, Model_g = anogan.train(64, X_train)
-Model_d, Model_g = anogan.load_model()
+# Model_d, Model_g = anogan.load_model()
 
-# generated_img = anogan.generate(64)
-# img = anogan.combine_images(generated_img)
-# img = (img+1)/2
-# # cv2.namedWindow('generated', 0)
-# # cv2.resizeWindow('generated', 256, 256)
+generated_img = anogan.generate(64)
+img = anogan.combine_images(generated_img)
+img = (img+1)/2
+# cv2.namedWindow('generated', 0)
+# cv2.resizeWindow('generated', 256, 256)
 
-# plt.figure(figsize=(4, 4))
-# plt.imshow(img, cmap=plt.cm.gray)
+plt.figure(num=4, figsize=(4, 4))
+plt.title('trained generator')
+plt.imshow(img, cmap=plt.cm.gray)
 # plt.show()
 
 # exit()
 
-## compute anomaly score - sample from test set
+# ## compute anomaly score - sample from test set
 # X_test = X_test.astype(np.float32) - 127.5 / 127.
 # X_test = X_test.reshape(-1, 28, 28, 1)
-# test_img = X_test[-10]
+# test_img = X_test_original[y_test==1][30]
 
 # model = anogan.anomaly_detector()
 # ano_score, similar_img = anogan.compute_anomaly_score(model, test_img.reshape(1, 28, 28, 1))
@@ -68,25 +69,47 @@ Model_d, Model_g = anogan.load_model()
 # plt.imshow(residual, cmap='jet', alpha=.5)
 # plt.show()
 
+# ## compute anomaly score - sample from strange image
+
+# # test_img = plt.imread('assets/test_img.png')
+# # test_img = test_img[:,:,0]
+# test_img = X_test_original[y_test==0][30]
+
+# model = anogan.anomaly_detector()
+# ano_score, similar_img = anogan.compute_anomaly_score(model, test_img.reshape(1, 28, 28, 1))
+
+# plt.figure(figsize=(2, 2))
+# plt.imshow(test_img.reshape(28,28), cmap=plt.cm.gray)
+# plt.show()
+# print("anomaly score : " + str(ano_score))
+# plt.figure(figsize=(2, 2))
+# plt.imshow(test_img.reshape(28,28), cmap=plt.cm.gray)
+# residual  = test_img.reshape(28,28) - similar_img.reshape(28, 28)
+# plt.imshow(residual, cmap='jet', alpha=.5)
+# plt.show()
+
 ## compute anomaly score - sample from strange image
 
 # test_img = plt.imread('assets/test_img.png')
 # test_img = test_img[:,:,0]
-test_img = X_test_original[y_test==0][30]
+test_img = X_test_original[y_test==7][3]
 
 model = anogan.anomaly_detector()
 ano_score, similar_img = anogan.compute_anomaly_score(model, test_img.reshape(1, 28, 28, 1))
 
-plt.figure(figsize=(2, 2))
+plt.figure(1, figsize=(2, 2))
+plt.title('query image')
 plt.imshow(test_img.reshape(28,28), cmap=plt.cm.gray)
-plt.show()
+# plt.show()
 print("anomaly score : " + str(ano_score))
-plt.figure(figsize=(2, 2))
-plt.imshow(test_img.reshape(28,28), cmap=plt.cm.gray)
+plt.figure(2, figsize=(2, 2))
+plt.title('generated image')
+plt.imshow(similar_img.reshape(28,28), cmap=plt.cm.gray)
 residual  = test_img.reshape(28,28) - similar_img.reshape(28, 28)
+plt.figure(3, figsize=(2, 2))
+plt.title('anomaly detection')
 plt.imshow(residual, cmap='jet', alpha=.5)
 plt.show()
-
 
 # from sklearn.manifold import TSNE
 

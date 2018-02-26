@@ -73,7 +73,6 @@ def generator_model():
     return model
 
 def discriminator_model():
-    model = Sequential()
     inputs = Input((28, 28, 1))
     conv1 = Conv2D(64, (5, 5), padding='same')(inputs)
     conv1 = LeakyReLU(0.2)(conv1)
@@ -165,23 +164,27 @@ def feature_extractor():
     d = discriminator_model()
     d.load_weights('assets/discriminator.h5') 
     intermidiate_model = Model(inputs=d.layers[0].input, outputs=d.layers[-7].output)
-    intermidiate_model.compile(loss='binary_crossentropy', optimizer='sgd')
+    intermidiate_model.compile(loss='binary_crossentropy', optimizer='rmsprop')
     return intermidiate_model
 
 def anomaly_detector():
+    # K.set_learning_phase(0)
     g = generator_model()
     g.load_weights('assets/generator.h5')
-    g.trainable = False
     intermidiate_model = feature_extractor()
     intermidiate_model.trainable = False
-    
+    g = Model(inputs=g.layers[1].input, outputs=g.layers[-1].output)
+    g.trainable = False
     aInput = Input(shape=(100,))
     gInput = Dense((100), trainable=True)(aInput)
+    gInput = Activation('sigmoid')(gInput)
     # gInput = Dense((100))(gInput)
     G_out = g(gInput)
     D_out= intermidiate_model(G_out)    
     model = Model(inputs=aInput, outputs=[G_out, D_out])
-    model.compile(loss=sum_of_residual, loss_weights= [1, 0], optimizer='sgd')
+    model.compile(loss=sum_of_residual, loss_weights= [0.95, 0.05], optimizer='rmsprop')
+    # print ('learning phase:', K.learning_phase())
+    K.set_learning_phase(0)
     # model.summary()
     # exit()
     return model
@@ -202,26 +205,17 @@ def compute_anomaly_score(model, x):
     for idx in range(1):
         similar_data_pre, _ = model.predict(z[idx])
         print (similar_data_pre.shape)
-        print (np.sum(abs(x[0] - similar_data_pre[0])))
-        debug = debug_model(model)
-        hidden = debug.predict(z[idx])
-        print ('hidden shape:', hidden[0].shape)
-        print (z[idx][0,:10])
-        print (hidden[0][:10])
-        loss = model.fit(z[idx], [x, d_x], batch_size=1, epochs=10, verbose=0)
+        print ('handcraft pre:', np.sum(abs(x[0] - similar_data_pre[0])))
+        loss = model.fit(z[idx], [x, d_x], batch_size=1, epochs=1500, verbose=0)
         # loss = model.train_on_batch(z[idx], [x, d_x])
         similar_data, _ = model.predict(z[idx])
-        debug = debug_model(model)
-        hidden = debug.predict(z[idx])
-        print (hidden[0][:10])
-        print (model.evaluate(z[idx], [x, d_x], 1, 1))
-        print (similar_data.shape)
-        print (np.sum(abs(x[0] - similar_data[0])))
-        print (np.sum(abs(similar_data[0] - similar_data_pre[0])))
+        print ('eval post:', model.evaluate(z[idx], [x, d_x], 1, 1))
+        print ('handcraft post:', np.sum(abs(x[0] - similar_data[0])))
+        print ('diff:', np.sum(abs(similar_data[0] - similar_data_pre[0])))
         list_similar_data.append(similar_data)
         # print ('loss', loss)
         list_loss.append(loss.history['loss'][-1])
-        print (loss.history['loss'])
+        # print (loss.history['loss'])
         loss = loss.history['loss'][-1]
     
     # print (list_loss)
