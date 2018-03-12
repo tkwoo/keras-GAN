@@ -194,10 +194,10 @@ def debug_model(model):
     debug_model.compile(loss='mse', optimizer='sgd')
     return debug_model
 
-def compute_anomaly_score(model, x):
+def compute_anomaly_score(model, x, iterations=1500):
     num_z = 10
     z = np.random.uniform(0, 1, size=(num_z, 1, 100))
-    model.summary()
+    # model.summary()
     list_similar_data = []
     list_loss = []
     intermidiate_model = feature_extractor()
@@ -206,7 +206,7 @@ def compute_anomaly_score(model, x):
         similar_data_pre, _ = model.predict(z[idx])
         print (similar_data_pre.shape)
         print ('handcraft pre:', np.sum(abs(x[0] - similar_data_pre[0])))
-        loss = model.fit(z[idx], [x, d_x], batch_size=1, epochs=1500, verbose=0)
+        loss = model.fit(z[idx], [x, d_x], batch_size=1, epochs=iterations, verbose=0)
         # loss = model.train_on_batch(z[idx], [x, d_x])
         similar_data, _ = model.predict(z[idx])
         print ('eval post:', model.evaluate(z[idx], [x, d_x], 1, 1))
