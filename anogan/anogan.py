@@ -19,14 +19,13 @@ def combine_images(generated_images):
     num = generated_images.shape[0]
     width = int(math.sqrt(num))
     height = int(math.ceil(float(num)/width))
-    shape = generated_images.shape[1:3]
-    image = np.zeros((height*shape[0], width*shape[1]),
+    shape = generated_images.shape[1:4]
+    image = np.zeros((height*shape[0], width*shape[1], shape[2]),
                      dtype=generated_images.dtype)
     for index, img in enumerate(generated_images):
         i = int(index/width)
         j = index % width
-        image[i*shape[0]:(i+1)*shape[0], j*shape[1]:(j+1)*shape[1]] = \
-            img[:, :, 0]
+        image[i*shape[0]:(i+1)*shape[0], j*shape[1]:(j+1)*shape[1],:] = img[:, :, :]
     return image
 
 # def generator_model():
@@ -160,18 +159,22 @@ def generate(BATCH_SIZE):
 def sum_of_residual(y_true, y_pred):
     return K.sum(K.abs(y_true - y_pred))
 
-def feature_extractor():
-    d = discriminator_model()
-    d.load_weights('assets/discriminator.h5') 
+def feature_extractor(d=None):
+    if d is None:
+        # print ('discriminator model loading')
+        d = discriminator_model()
+        d.load_weights('assets/discriminator.h5') 
     intermidiate_model = Model(inputs=d.layers[0].input, outputs=d.layers[-7].output)
     intermidiate_model.compile(loss='binary_crossentropy', optimizer='rmsprop')
     return intermidiate_model
 
-def anomaly_detector():
+def anomaly_detector(g=None, d=None):
     # K.set_learning_phase(0)
-    g = generator_model()
-    g.load_weights('assets/generator.h5')
-    intermidiate_model = feature_extractor()
+    if g is None:
+        # print ('generator model loading')
+        g = generator_model()
+        g.load_weights('assets/generator.h5')
+    intermidiate_model = feature_extractor(d)
     intermidiate_model.trainable = False
     g = Model(inputs=g.layers[1].input, outputs=g.layers[-1].output)
     g.trainable = False
@@ -182,7 +185,7 @@ def anomaly_detector():
     G_out = g(gInput)
     D_out= intermidiate_model(G_out)    
     model = Model(inputs=aInput, outputs=[G_out, D_out])
-    model.compile(loss=sum_of_residual, loss_weights= [0.95, 0.05], optimizer='rmsprop')
+    model.compile(loss=sum_of_residual, loss_weights= [0.90, 0.10], optimizer='rmsprop')
     # print ('learning phase:', K.learning_phase())
     K.set_learning_phase(0)
     # model.summary()
@@ -194,25 +197,25 @@ def debug_model(model):
     debug_model.compile(loss='mse', optimizer='sgd')
     return debug_model
 
-def compute_anomaly_score(model, x, iterations=1500):
+def compute_anomaly_score(model, x, iterations=1500, d=None):
     num_z = 10
     z = np.random.uniform(0, 1, size=(num_z, 1, 100))
     # model.summary()
     list_similar_data = []
     list_loss = []
-    intermidiate_model = feature_extractor()
+    intermidiate_model = feature_extractor(d)
     d_x = intermidiate_model.predict(x)
     for idx in range(1):
-        similar_data_pre, _ = model.predict(z[idx])
-        print (similar_data_pre.shape)
-        print ('handcraft pre:', np.sum(abs(x[0] - similar_data_pre[0])))
+        # similar_data_pre, _ = model.predict(z[idx])
+        # print (similar_data_pre.shape)
+        # print ('handcraft pre:', np.sum(abs(x[0] - similar_data_pre[0])))
         loss = model.fit(z[idx], [x, d_x], batch_size=1, epochs=iterations, verbose=0)
         # loss = model.train_on_batch(z[idx], [x, d_x])
         similar_data, _ = model.predict(z[idx])
-        print ('eval post:', model.evaluate(z[idx], [x, d_x], 1, 1))
-        print ('handcraft post:', np.sum(abs(x[0] - similar_data[0])))
-        print ('diff:', np.sum(abs(similar_data[0] - similar_data_pre[0])))
-        list_similar_data.append(similar_data)
+        # print ('eval post:', model.evaluate(z[idx], [x, d_x], 1, 1))
+        # print ('handcraft post:', np.sum(abs(x[0] - similar_data[0])))
+        # print ('diff:', np.sum(abs(similar_data[0] - similar_data_pre[0])))
+        # list_similar_data.append(similar_data)
         # print ('loss', loss)
         list_loss.append(loss.history['loss'][-1])
         # print (loss.history['loss'])
