@@ -192,14 +192,15 @@ def anomaly_detector(g=None, d=None):
     # exit()
     return model
 
-def debug_model(model):
-    debug_model = Model(inputs=model.inputs, outputs=model.layers[1].output)
+def debug(model):
+    debug_model = Model(inputs=model.layers[1].input, outputs=model.layers[2].output)
     debug_model.compile(loss='mse', optimizer='sgd')
     return debug_model
 
 def compute_anomaly_score(model, x, iterations=1500, d=None):
     num_z = 10
     z = np.random.uniform(0, 1, size=(num_z, 1, 100))
+    debug_model = debug(model)
     # model.summary()
     list_similar_data = []
     list_loss = []
@@ -209,9 +210,14 @@ def compute_anomaly_score(model, x, iterations=1500, d=None):
         # similar_data_pre, _ = model.predict(z[idx])
         # print (similar_data_pre.shape)
         # print ('handcraft pre:', np.sum(abs(x[0] - similar_data_pre[0])))
+        # print ('ori z:', z[idx])
+        # print ('pred pre z:', debug_model.predict(z[idx]))
         loss = model.fit(z[idx], [x, d_x], batch_size=1, epochs=iterations, verbose=0)
         # loss = model.train_on_batch(z[idx], [x, d_x])
         similar_data, _ = model.predict(z[idx])
+        last_z = debug_model.predict(z[idx])
+        # print ('pred after z:', last_z)
+        
         # print ('eval post:', model.evaluate(z[idx], [x, d_x], 1, 1))
         # print ('handcraft post:', np.sum(abs(x[0] - similar_data[0])))
         # print ('diff:', np.sum(abs(similar_data[0] - similar_data_pre[0])))
@@ -224,4 +230,4 @@ def compute_anomaly_score(model, x, iterations=1500, d=None):
     # print (list_loss)
     # exit()
     
-    return loss, similar_data
+    return loss, similar_data, last_z
