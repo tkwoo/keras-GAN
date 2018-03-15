@@ -28,35 +28,9 @@ def combine_images(generated_images):
         image[i*shape[0]:(i+1)*shape[0], j*shape[1]:(j+1)*shape[1],:] = img[:, :, :]
     return image
 
-# def generator_model():
-#     generator = Sequential()
-#     generator.add(Dense(128*7*7, input_dim=100, kernel_initializer=initializers.RandomNormal(stddev=0.02)))
-#     generator.add(LeakyReLU(0.2))
-#     generator.add(Reshape((7, 7, 128)))
-#     generator.add(UpSampling2D(size=(2, 2)))
-#     generator.add(Conv2D(64, kernel_size=(5, 5), padding='same'))
-#     generator.add(LeakyReLU(0.2))
-#     generator.add(UpSampling2D(size=(2, 2)))
-#     generator.add(Conv2D(1, kernel_size=(5, 5), padding='same', activation='tanh'))
-#     generator.compile(loss='binary_crossentropy', optimizer='adam')
-#     return generator
-
-# def discriminator_model():
-#     discriminator = Sequential()
-#     discriminator.add(Conv2D(64, kernel_size=(5, 5), strides=(2, 2), padding='same', input_shape=(28,28, 1), kernel_initializer=initializers.RandomNormal(stddev=0.02)))
-#     discriminator.add(LeakyReLU(0.2))
-#     discriminator.add(Dropout(0.3))
-#     discriminator.add(Conv2D(128, kernel_size=(5, 5), strides=(2, 2), padding='same'))
-#     discriminator.add(LeakyReLU(0.2))
-#     discriminator.add(Dropout(0.3))
-#     discriminator.add(Flatten())
-#     discriminator.add(Dense(1, activation='sigmoid'))
-#     discriminator.compile(loss='binary_crossentropy', optimizer='adam')
-#     return discriminator
-
 def generator_model():
-    inputs = Input((100,))
-    fc1 = Dense(input_dim=100, units=128*7*7)(inputs)
+    inputs = Input((10,))
+    fc1 = Dense(input_dim=10, units=128*7*7)(inputs)
     fc1 = BatchNormalization()(fc1)
     fc1 = LeakyReLU(0.2)(fc1)
     fc2 = Reshape((7, 7, 128), input_shape=(128*7*7,))(fc1)
@@ -88,7 +62,7 @@ def discriminator_model():
 
 def generator_containing_discriminator(g, d):
     d.trainable = False
-    ganInput = Input(shape=(100,))
+    ganInput = Input(shape=(10,))
     x = g(ganInput)
     ganOutput = d(x)
     gan = Model(inputs=ganInput, outputs=ganOutput)
@@ -110,21 +84,21 @@ def train(BATCH_SIZE, X_train):
     d = discriminator_model()
     g = generator_model()
     d_on_g = generator_containing_discriminator(g, d)
-    d_optim = RMSprop()
+    d_optim = RMSprop(lr=0.0004)
     g_optim = RMSprop(lr=0.0002)
-    g.compile(loss='binary_crossentropy', optimizer=g_optim)
-    d_on_g.compile(loss='binary_crossentropy', optimizer=g_optim)
+    g.compile(loss='mse', optimizer=g_optim)
+    d_on_g.compile(loss='mse', optimizer=g_optim)
     d.trainable = True
-    d.compile(loss='binary_crossentropy', optimizer=d_optim)
+    d.compile(loss='mse', optimizer=d_optim)
     
-    for epoch in range(20):
+    for epoch in range(10):
         print ("Epoch is", epoch)
         # print ("Number of batches", int(X_train.shape[0]/BATCH_SIZE))
         n_iter = int(X_train.shape[0]/BATCH_SIZE)
         progress_bar = Progbar(target=n_iter)
         
         for index in range(n_iter):
-            noise = np.random.uniform(0, 1, size=(BATCH_SIZE, 100))
+            noise = np.random.uniform(0, 1, size=(BATCH_SIZE, 10))
             image_batch = X_train[index*BATCH_SIZE:(index+1)*BATCH_SIZE]
             generated_images = g.predict(noise, verbose=0)
             if index % 20 == 0:
@@ -137,6 +111,7 @@ def train(BATCH_SIZE, X_train):
             
             d_loss = d.train_on_batch(X, y)
             # noise = np.random.uniform(0, 1, (BATCH_SIZE, 100))
+            # if index % 2 == 0:
             d.trainable = False
             g_loss = d_on_g.train_on_batch(noise, np.array([1] * BATCH_SIZE))
             d.trainable = True
@@ -152,7 +127,7 @@ def train(BATCH_SIZE, X_train):
 def generate(BATCH_SIZE):
     g = generator_model()
     g.load_weights('assets/generator.h5')
-    noise = np.random.uniform(0, 1, (BATCH_SIZE, 100))
+    noise = np.random.uniform(0, 1, (BATCH_SIZE, 10))
     generated_images = g.predict(noise)
     return generated_images
 
@@ -178,8 +153,8 @@ def anomaly_detector(g=None, d=None):
     intermidiate_model.trainable = False
     g = Model(inputs=g.layers[1].input, outputs=g.layers[-1].output)
     g.trainable = False
-    aInput = Input(shape=(100,))
-    gInput = Dense((100), trainable=True)(aInput)
+    aInput = Input(shape=(10,))
+    gInput = Dense((10), trainable=True)(aInput)
     gInput = Activation('sigmoid')(gInput)
     # gInput = Dense((100))(gInput)
     G_out = g(gInput)
@@ -199,7 +174,7 @@ def debug(model):
 
 def compute_anomaly_score(model, x, iterations=1500, d=None):
     num_z = 10
-    z = np.random.uniform(0, 1, size=(num_z, 1, 100))
+    z = np.random.uniform(0, 1, size=(num_z, 1, 10))
     debug_model = debug(model)
     # model.summary()
     list_similar_data = []
